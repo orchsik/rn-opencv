@@ -67,7 +67,8 @@ export default class CameraScreen extends Component {
           photoAsBase64: {
             ...this.state.photoAsBase64,
             isPhotoPreview: true,
-            photoPath: new_photo,
+            photoPath,
+            content: new_photo,
           },
         });
       })
