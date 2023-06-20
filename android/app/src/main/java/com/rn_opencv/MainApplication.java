@@ -33,7 +33,7 @@ public class MainApplication extends Application implements ReactApplication {
       // example:
       // packages.add(new MyReactNativePackage());
 
-      packages.add(new MainReactPackage());
+      // packages.add(new MainReactPackage());
       packages.add(new RNOpenCvLibraryPackage());
 
       return packages;
