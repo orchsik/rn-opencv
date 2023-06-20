@@ -19,7 +19,7 @@ export default class CameraScreen extends Component {
     super(props);
 
     this.takePicture = this.takePicture.bind(this);
-    this.checkForBlurryImage = this.checkForBlurryImage.bind(this);
+    this.checkForRectangle = this.checkForRectangle.bind(this);
     this.proceedWithCheckingBlurryImage =
       this.proceedWithCheckingBlurryImage.bind(this);
     this.repeatPhoto = this.repeatPhoto.bind(this);
@@ -35,20 +35,21 @@ export default class CameraScreen extends Component {
     },
   };
 
-  checkForBlurryImage(imageAsBase64) {
+  checkForRectangle(imageAsBase64) {
     return new Promise((resolve, reject) => {
       if (Platform.OS === 'android') {
-        OpenCV.checkForBlurryImage(
+        OpenCV.checkForRectangle(
           imageAsBase64,
           error => {
+            console.log('error', error);
             // error handling
           },
-          msg => {
-            resolve(msg);
+          new_imageAsBase64 => {
+            resolve(new_imageAsBase64);
           },
         );
       } else {
-        OpenCV.checkForBlurryImage(imageAsBase64, (error, dataArray) => {
+        OpenCV.checkForRectangle(imageAsBase64, (error, dataArray) => {
           resolve(dataArray[0]);
         });
       }
@@ -58,18 +59,15 @@ export default class CameraScreen extends Component {
   proceedWithCheckingBlurryImage() {
     const {content, photoPath} = this.state.photoAsBase64;
 
-    this.checkForBlurryImage(content)
-      .then(blurryPhoto => {
-        if (blurryPhoto) {
-          this.refs.toast.show('Photo is blurred!', DURATION.FOREVER);
-          return this.repeatPhoto();
-        }
-        this.refs.toast.show('Photo is clear!', DURATION.FOREVER);
+    console.log('## proceedWithCheckingBlurryImage');
+    this.checkForRectangle(content)
+      .then(new_photo => {
+        console.log('## new_photo', new_photo);
         this.setState({
           photoAsBase64: {
             ...this.state.photoAsBase64,
             isPhotoPreview: true,
-            photoPath,
+            photoPath: new_photo,
           },
         });
       })
