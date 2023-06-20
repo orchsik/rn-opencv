@@ -20,8 +20,8 @@ export default class CameraScreen extends Component {
 
     this.takePicture = this.takePicture.bind(this);
     this.checkForRectangle = this.checkForRectangle.bind(this);
-    this.proceedWithCheckingBlurryImage =
-      this.proceedWithCheckingBlurryImage.bind(this);
+    this.proceedWithcheckForRectangle =
+      this.proceedWithcheckForRectangle.bind(this);
     this.repeatPhoto = this.repeatPhoto.bind(this);
     this.usePhoto = this.usePhoto.bind(this);
   }
@@ -41,7 +41,7 @@ export default class CameraScreen extends Component {
         OpenCV.checkForRectangle(
           imageAsBase64,
           error => {
-            console.log('error', error);
+            console.log('error');
             // error handling
           },
           new_imageAsBase64 => {
@@ -56,13 +56,13 @@ export default class CameraScreen extends Component {
     });
   }
 
-  proceedWithCheckingBlurryImage() {
+  proceedWithcheckForRectangle() {
     const {content, photoPath} = this.state.photoAsBase64;
 
-    console.log('## proceedWithCheckingBlurryImage');
+    console.log('## proceedWithcheckForRectangle');
     this.checkForRectangle(content)
       .then(new_photo => {
-        console.log('## new_photo', new_photo);
+        console.log('## new_photo');
         this.setState({
           photoAsBase64: {
             ...this.state.photoAsBase64,
@@ -88,7 +88,7 @@ export default class CameraScreen extends Component {
           photoPath: data.uri,
         },
       });
-      this.proceedWithCheckingBlurryImage();
+      this.proceedWithcheckForRectangle();
     }
   }
 

@@ -37,6 +37,33 @@ public class RNOpenCvLibraryModule extends ReactContextBaseJavaModule {
     return "RNOpenCvLibrary";
   }
 
+  private List<MatOfPoint> rectanglesFor(List<MatOfPoint> contours) {
+    // 윤곽선을 필터링하고 직사각형을 감지: 윤곽선을 반복하여 직사각형 기준을 충족하지 않는 윤곽선을 필터링.
+    // OpenCV의 approxPolyDP 함수를 사용하여 윤곽의 근사치를 구하고 변의 수를 결정할 수 있다.
+    List<MatOfPoint> rectangles = new ArrayList<>();
+    for (MatOfPoint contour : contours) {
+      double epsilon = 0.02 * Imgproc.arcLength(new MatOfPoint2f(contour.toArray()), true);
+      MatOfPoint2f approx = new MatOfPoint2f();
+      Imgproc.approxPolyDP(new MatOfPoint2f(contour.toArray()), approx, epsilon, true);
+      if (approx.total() == 4) {
+        rectangles.add(contour);
+      }
+    }
+    return rectangles;
+  }
+
+  private String matToBase64Image(Mat image) {
+    // OpenCV 매트 이미지를 비트맵으로 변환
+    Bitmap bitmap = Bitmap.createBitmap(image.cols(), image.rows(), Bitmap.Config.ARGB_8888);
+    Utils.matToBitmap(image, bitmap);
+    // 비트맵을 Base64로 인코딩된 문자열로 변환
+    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+    bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+    byte[] byteArray = byteArrayOutputStream.toByteArray();
+    String base64Image = Base64.encodeToString(byteArray, Base64.DEFAULT);
+    return base64Image;
+  }
+
   @ReactMethod
   public void checkForRectangle(String imageAsBase64, Callback errorCallback, Callback successCallback) {
     try {
@@ -65,29 +92,12 @@ public class RNOpenCvLibraryModule extends ReactContextBaseJavaModule {
       Mat hierarchy = new Mat();
       Imgproc.findContours(edges, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
 
-      // 윤곽선을 필터링하고 직사각형을 감지: 윤곽선을 반복하여 직사각형 기준을 충족하지 않는 윤곽선을 필터링.
-      // OpenCV의 approxPolyDP 함수를 사용하여 윤곽의 근사치를 구하고 변의 수를 결정할 수 있다.
-      List<MatOfPoint> rectangles = new ArrayList<>();
-      for (MatOfPoint contour : contours) {
-        double epsilon = 0.02 * Imgproc.arcLength(new MatOfPoint2f(contour.toArray()), true);
-        MatOfPoint2f approx = new MatOfPoint2f();
-        Imgproc.approxPolyDP(new MatOfPoint2f(contour.toArray()), approx, epsilon, true);
-        if (approx.total() == 4) {
-          rectangles.add(contour);
-        }
-      }
+      List<MatOfPoint> rectangles = rectanglesFor(contours);
 
       // 직사각형을 그리기: 원본 이미지에 감지된 직사각형을 그림
       Imgproc.drawContours(image, rectangles, -1, new Scalar(0, 255, 0), 2);
 
-      // OpenCV 매트 이미지를 비트맵으로 변환
-      Bitmap bitmap = Bitmap.createBitmap(image.cols(), image.rows(), Bitmap.Config.ARGB_8888);
-      Utils.matToBitmap(image, bitmap);
-      // 비트맵을 Base64로 인코딩된 문자열로 변환
-      ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-      bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
-      byte[] byteArray = byteArrayOutputStream.toByteArray();
-      String base64Image = Base64.encodeToString(byteArray, Base64.DEFAULT);
+      String base64Image = matToBase64Image(image);
 
       successCallback.invoke(base64Image);
     } catch (Exception e) {
