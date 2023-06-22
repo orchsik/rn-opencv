@@ -16,12 +16,14 @@ import org.opencv.core.Mat;
 import org.opencv.android.Utils;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class RNOpenCvLibraryModule extends ReactContextBaseJavaModule {
@@ -59,19 +61,47 @@ public class RNOpenCvLibraryModule extends ReactContextBaseJavaModule {
     return blurGray;
   }
 
-  private List<MatOfPoint> rectanglesFor(List<MatOfPoint> contours) {
+  private double angle(Point pt1, Point pt2, Point pt0) {
+    double dx1 = pt1.x - pt0.x;
+    double dy1 = pt1.y - pt0.y;
+    double dx2 = pt2.x - pt0.x;
+    double dy2 = pt2.y - pt0.y;
+    return (dx1 * dx2 + dy1 * dy2) / Math.sqrt((dx1 * dx1 + dy1 * dy1) * (dx2 * dx2 + dy2 * dy2) + 1e-10);
+  }
+
+  private List<MatOfPoint> rectanglesFor(List<MatOfPoint> contours, double minimumArea) {
     List<MatOfPoint> rectangles = new ArrayList<>();
 
     for (MatOfPoint contour : contours) {
-      double epsilon = 0.02 * Imgproc.arcLength(new MatOfPoint2f(contour.toArray()), true);
+      MatOfPoint2f curve = new MatOfPoint2f(contour.toArray());
       MatOfPoint2f approx = new MatOfPoint2f();
-      Imgproc.approxPolyDP(new MatOfPoint2f(contour.toArray()), approx, epsilon, true);
-      if (approx.total() == 4) {
-        rectangles.add(contour);
+      double epsilon = 0.02 * Imgproc.arcLength(curve, true);
+      Imgproc.approxPolyDP(curve, approx, epsilon, true);
+
+      double contourArea = Imgproc.contourArea(contour);
+      if (Math.abs(contourArea) < 100) {
+        continue;
       }
+      rectangles.add(contour);
+
+      // int verticeCnt = (int) approx.total();
+      // if (verticeCnt >= 4 && verticeCnt <= 6) {
+      // List<Double> cos = new ArrayList<>();
+      // for (int j = 2; j < verticeCnt + 1; j++) {
+      // cos.add(angle(approx.toArray()[j % verticeCnt], approx.toArray()[j - 2],
+      // approx.toArray()[j - 1]));
+      // }
+      // Collections.sort(cos);
+      // double mincos = cos.get(0);
+      // double maxcos = cos.get(cos.size() - 1);
+
+      // if (verticeCnt == 4 && mincos >= -0.1 && maxcos <= 0.3) {
+      // rectangles.add(contour);
+      // }
     }
 
     return rectangles;
+
   }
 
   @ReactMethod
@@ -102,7 +132,7 @@ public class RNOpenCvLibraryModule extends ReactContextBaseJavaModule {
       Mat hierarchy = new Mat();
       Imgproc.findContours(edges, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
 
-      List<MatOfPoint> rectangles = rectanglesFor(contours);
+      List<MatOfPoint> rectangles = rectanglesFor(contours, edges.size().area() * 0.1);
 
       // 직사각형을 그리기: 원본 이미지에 감지된 직사각형을 그림
       Imgproc.drawContours(image, rectangles, -1, new Scalar(0, 255, 0), 2);
