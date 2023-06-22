@@ -73,6 +73,33 @@ public class RNOpenCvLibraryModule extends ReactContextBaseJavaModule {
     return (dx1 * dx2 + dy1 * dy2) / Math.sqrt((dx1 * dx1 + dy1 * dy1) * (dx2 * dx2 + dy2 * dy2) + 1e-10);
   }
 
+  private boolean checkCosine(MatOfPoint2f approx) {
+    boolean result = false;
+    int verticeCnt = (int) approx.total();
+    if (verticeCnt >= 4 && verticeCnt <= 6) {
+      List<Double> cos = new ArrayList<>();
+      for (int j = 2; j < verticeCnt + 1; j++) {
+        cos.add(angle(approx.toArray()[j % verticeCnt], approx.toArray()[j - 2],
+            approx.toArray()[j - 1]));
+      }
+      Collections.sort(cos);
+      double mincos = cos.get(0);
+      double maxcos = cos.get(cos.size() - 1);
+
+      result = verticeCnt == 4 && mincos >= -0.1 && maxcos <= 0.3;
+    }
+    return result;
+  }
+
+  private Mat edgesFor(Mat image) {
+    // 가장자리 감지를 수행: 캐니 가장자리 감지 알고리즘을 그레이스케일 이미지에 적용
+    // threshold: 에지가 너무 약하거나 노이즈가 있는 경우 낮춰라. 반대로 에지가 너무 강하거나 중요한 에지가 많이 누락된 경우 높여라
+    Mat edges = new Mat();
+    int threshold = 50;
+    Imgproc.Canny(image, edges, threshold, threshold * 3);
+    return edges;
+  }
+
   private List<MatOfPoint> rectanglesFor(List<MatOfPoint> contours, double minimumArea) {
     List<MatOfPoint> rectangles = new ArrayList<>();
 
@@ -87,25 +114,9 @@ public class RNOpenCvLibraryModule extends ReactContextBaseJavaModule {
         continue;
       }
       rectangles.add(contour);
-
-      // int verticeCnt = (int) approx.total();
-      // if (verticeCnt >= 4 && verticeCnt <= 6) {
-      // List<Double> cos = new ArrayList<>();
-      // for (int j = 2; j < verticeCnt + 1; j++) {
-      // cos.add(angle(approx.toArray()[j % verticeCnt], approx.toArray()[j - 2],
-      // approx.toArray()[j - 1]));
-      // }
-      // Collections.sort(cos);
-      // double mincos = cos.get(0);
-      // double maxcos = cos.get(cos.size() - 1);
-
-      // if (verticeCnt == 4 && mincos >= -0.1 && maxcos <= 0.3) {
-      // rectangles.add(contour);
-      // }
     }
 
     return rectangles;
-
   }
 
   @ReactMethod
@@ -123,20 +134,15 @@ public class RNOpenCvLibraryModule extends ReactContextBaseJavaModule {
 
       // 이미지의 특징을 추출하기 위해서 비트맵을 회색조 매트 오브젝트로 변환
       Mat processingImage = processImage(image);
-
-      // 가장자리 감지를 수행: 캐니 가장자리 감지 알고리즘을 그레이스케일 이미지에 적용
-      // threshold: 에지가 너무 약하거나 노이즈가 있는 경우 낮춰라. 반대로 에지가 너무 강하거나 중요한 에지가 많이 누락된 경우 높여라
-      Mat edges = new Mat();
-      int threshold = 50;
-      Imgproc.Canny(processingImage, edges, threshold, threshold * 3);
+      // Mat edges = edgesFor(processingImage)
 
       // RETR_EXTERNAL은 다른 윤곽선 안에 포함된 윤곽선은 무시하고 외부(외부) 윤곽선만 검색(윤곽 검색 모드)
       // CHAIN_APPROX_SIMPLE는 가로, 세로, 대각선 세그먼트를 각각의 끝점으로 압축하고 중간 지점은 버림(윤곽 근사화 방법)
       List<MatOfPoint> contours = new ArrayList<>();
       Mat hierarchy = new Mat();
-      Imgproc.findContours(edges, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+      Imgproc.findContours(processingImage, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
 
-      List<MatOfPoint> rectangles = rectanglesFor(contours, edges.size().area() * 0.1);
+      List<MatOfPoint> rectangles = rectanglesFor(contours, processingImage.size().area() * 0.1);
 
       // 직사각형을 그리기: 원본 이미지에 감지된 직사각형을 그림
       Imgproc.drawContours(image, rectangles, -1, new Scalar(0, 255, 0), 2);
