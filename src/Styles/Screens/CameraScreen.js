@@ -2,11 +2,10 @@ import {StyleSheet} from 'react-native';
 
 export default StyleSheet.create({
   imagePreview: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    left: 0,
-    bottom: 60,
+    borderWidth: 2,
+    borderColor: 'blue',
+    flex: 1,
+    width: '100%',
   },
   container: {
     flex: 1,
@@ -18,7 +17,7 @@ export default StyleSheet.create({
     left: 0,
     width: '50%',
     height: 120,
-    backgroundColor: '#000',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     alignItems: 'flex-start',
     justifyContent: 'center',
   },
@@ -58,7 +57,7 @@ export default StyleSheet.create({
     right: 0,
     width: '50%',
     height: 120,
-    backgroundColor: '#000',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     alignItems: 'flex-end',
     justifyContent: 'center',
   },

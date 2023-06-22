@@ -30,6 +30,8 @@ export default class CameraScreen extends Component {
     cameraPermission: false,
     photoAsBase64: {
       content: '',
+      origin: '',
+      cropped: '',
       isPhotoPreview: false,
       photoPath: '',
     },
@@ -44,8 +46,8 @@ export default class CameraScreen extends Component {
             console.log('error');
             // error handling
           },
-          new_imageAsBase64 => {
-            resolve(new_imageAsBase64);
+          result => {
+            resolve(result);
           },
         );
       } else {
@@ -61,14 +63,15 @@ export default class CameraScreen extends Component {
 
     console.log('## proceedWithcheckForRectangle');
     this.checkForRectangle(content)
-      .then(new_photo => {
+      .then(([origin, cropped]) => {
         console.log('## new_photo');
         this.setState({
           photoAsBase64: {
             ...this.state.photoAsBase64,
             isPhotoPreview: true,
             photoPath,
-            content: new_photo,
+            origin,
+            cropped,
           },
         });
       })
@@ -85,6 +88,8 @@ export default class CameraScreen extends Component {
         ...this.state,
         photoAsBase64: {
           content: data.base64,
+          origin: '',
+          cropped: '',
           isPhotoPreview: false,
           photoPath: data.uri,
         },
@@ -98,6 +103,8 @@ export default class CameraScreen extends Component {
       ...this.state,
       photoAsBase64: {
         content: '',
+        origin: '',
+        cropped: '',
         isPhotoPreview: false,
         photoPath: '',
       },
@@ -113,12 +120,24 @@ export default class CameraScreen extends Component {
       return (
         <View style={styles.container}>
           <Toast ref="toast" position="center" />
-          <Image
-            source={{
-              uri: `data:image/png;base64,${this.state.photoAsBase64.content}`,
-            }}
-            style={styles.imagePreview}
-          />
+
+          <View style={[styles.imagePreview]}>
+            <Image
+              source={{
+                uri: `data:image/png;base64,${this.state.photoAsBase64.origin}`,
+              }}
+              style={{height: '100%', width: '100%', resizeMode: 'contain'}}
+            />
+          </View>
+          <View style={[styles.imagePreview]}>
+            <Image
+              source={{
+                uri: `data:image/png;base64,${this.state.photoAsBase64.cropped}`,
+              }}
+              style={{height: '100%', width: '100%', resizeMode: 'contain'}}
+            />
+          </View>
+
           <View style={styles.repeatPhotoContainer}>
             <TouchableOpacity onPress={this.repeatPhoto}>
               <Text style={styles.photoPreviewRepeatPhotoText}>
