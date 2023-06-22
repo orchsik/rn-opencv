@@ -129,14 +129,16 @@ export default class CameraScreen extends Component {
               style={{height: '100%', width: '100%', resizeMode: 'contain'}}
             />
           </View>
-          <View style={[styles.imagePreview]}>
-            <Image
-              source={{
-                uri: `data:image/png;base64,${this.state.photoAsBase64.cropped}`,
-              }}
-              style={{height: '100%', width: '100%', resizeMode: 'contain'}}
-            />
-          </View>
+          {this.state.photoAsBase64.cropped && (
+            <View style={[styles.imagePreview]}>
+              <Image
+                source={{
+                  uri: `data:image/png;base64,${this.state.photoAsBase64.cropped}`,
+                }}
+                style={{height: '100%', width: '100%', resizeMode: 'contain'}}
+              />
+            </View>
+          )}
 
           <View style={styles.repeatPhotoContainer}>
             <TouchableOpacity onPress={this.repeatPhoto}>

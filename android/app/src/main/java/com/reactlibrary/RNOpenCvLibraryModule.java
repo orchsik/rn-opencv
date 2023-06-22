@@ -78,7 +78,6 @@ public class RNOpenCvLibraryModule extends ReactContextBaseJavaModule {
   private Mat largestRectangleFor(List<MatOfPoint> contours, Mat image) {
     double maxArea = 0;
     Rect largestRect = null;
-
     for (MatOfPoint contour : contours) {
       double contourArea = Imgproc.contourArea(contour);
       if (Math.abs(contourArea) < 100) {
@@ -89,11 +88,7 @@ public class RNOpenCvLibraryModule extends ReactContextBaseJavaModule {
       MatOfPoint2f approx = new MatOfPoint2f();
       double epsilon = 0.02 * Imgproc.arcLength(curve, true);
       Imgproc.approxPolyDP(curve, approx, epsilon, true);
-
       if (approx.total() == 4) {
-        // Rect tmp = Imgproc.boundingRect(new MatOfPoint(approx.toArray()));
-        // Imgproc.rectangle(image, tmp.tl(), tmp.br(), new Scalar(0, 255, 0), 2);
-
         double area = Imgproc.contourArea(approx);
         if (area > maxArea) {
           maxArea = area;
@@ -101,14 +96,18 @@ public class RNOpenCvLibraryModule extends ReactContextBaseJavaModule {
         }
       }
     }
-
-    if (largestRect != null) {
-      Mat croppedImage = new Mat(image, largestRect);
-      Imgproc.rectangle(image, largestRect.tl(), largestRect.br(), new Scalar(0, 255, 0), 2);
-      return croppedImage;
-    } else {
-      return image;
+    if (largestRect == null) {
+      return null;
     }
+
+    Imgproc.rectangle(image, largestRect.tl(), largestRect.br(), new Scalar(0, 255, 0), 2);
+    boolean isSizeValidation = largestRect.width > image.width() * 0.5 && largestRect.height > image.height() * 0.5;
+    if (!isSizeValidation) {
+      return null;
+    }
+
+    Mat croppedImage = new Mat(image, largestRect);
+    return croppedImage;
   }
 
   @ReactMethod
@@ -134,14 +133,12 @@ public class RNOpenCvLibraryModule extends ReactContextBaseJavaModule {
       Imgproc.findContours(processed, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
 
       Mat croppedMat = largestRectangleFor(contours, image);
-
-      String croppedImage = matToBase64Image(croppedMat);
       String originImage = matToBase64Image(image);
+      String croppedImage = croppedMat == null ? null : matToBase64Image(croppedMat);
 
       WritableArray array = Arguments.createArray();
       array.pushString(originImage);
       array.pushString(croppedImage);
-
       successCallback.invoke(array);
     } catch (Exception e) {
       errorCallback.invoke(e.getMessage());
