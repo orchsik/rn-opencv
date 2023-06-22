@@ -52,13 +52,17 @@ public class RNOpenCvLibraryModule extends ReactContextBaseJavaModule {
     return base64Image;
   }
 
-  private Mat blurGrayFor(Mat image) {
+  private Mat processImage(Mat image) {
     // 이미지의 특징을 추출하기 위해서 회색조 매트 오브젝트로 변환
-    Mat gray = new Mat();
-    Imgproc.cvtColor(image, gray, Imgproc.COLOR_BGR2GRAY);
-    Mat blurGray = new Mat();
-    Imgproc.blur(gray, blurGray, new Size(3, 3));
-    return blurGray;
+    Mat imageHSV = new Mat();
+    Mat imageBlurr = new Mat();
+    Mat result = new Mat();
+
+    Imgproc.cvtColor(image, imageHSV, Imgproc.COLOR_BGR2GRAY);
+    Imgproc.blur(imageHSV, imageBlurr, new Size(5, 5));
+    Imgproc.adaptiveThreshold(imageBlurr, result, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 7, 5);
+
+    return result;
   }
 
   private double angle(Point pt1, Point pt2, Point pt0) {
@@ -118,13 +122,13 @@ public class RNOpenCvLibraryModule extends ReactContextBaseJavaModule {
       Utils.bitmapToMat(sourceBitmap, image);
 
       // 이미지의 특징을 추출하기 위해서 비트맵을 회색조 매트 오브젝트로 변환
-      Mat blurGray = blurGrayFor(image);
+      Mat processingImage = processImage(image);
 
       // 가장자리 감지를 수행: 캐니 가장자리 감지 알고리즘을 그레이스케일 이미지에 적용
       // threshold: 에지가 너무 약하거나 노이즈가 있는 경우 낮춰라. 반대로 에지가 너무 강하거나 중요한 에지가 많이 누락된 경우 높여라
       Mat edges = new Mat();
       int threshold = 50;
-      Imgproc.Canny(blurGray, edges, threshold, threshold * 3);
+      Imgproc.Canny(processingImage, edges, threshold, threshold * 3);
 
       // RETR_EXTERNAL은 다른 윤곽선 안에 포함된 윤곽선은 무시하고 외부(외부) 윤곽선만 검색(윤곽 검색 모드)
       // CHAIN_APPROX_SIMPLE는 가로, 세로, 대각선 세그먼트를 각각의 끝점으로 압축하고 중간 지점은 버림(윤곽 근사화 방법)
